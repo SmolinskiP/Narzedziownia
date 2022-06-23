@@ -20,7 +20,6 @@ def File_Permission_Update():
     usrname = getpass.getuser()
     try:
         os.system('CACLS "' + db_params_file + '" /e /p ' + usrname + ':f')
-        print('CACLS "' + db_params_file + '" /e /p ' + usrname + ':f')
         os.system('CACLS "' + ser_params_file + '" /e /p ' + usrname + ':f')
     except Exception as e:
         print(e)
@@ -67,9 +66,30 @@ right_buttons_panel.pack(side=RIGHT, fill=Y)
 top_buttons_panel = ttk.Label(main_window, anchor=N)
 top_buttons_panel.pack(side=TOP, fill=X)
 
-middle_screen_panel = Canvas(main_window)
-middle_screen_panel.pack(side=TOP, fill=BOTH)
-scrollbar = ttk.Scrollbar(middle_screen_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=RIGHT, fill=Y)
+
+
+scrollframe = Frame(main_window)
+scrollframe.pack(side=TOP, fill=BOTH, expand=True)
+
+vscrollbar = Scrollbar(scrollframe, orient='vertical')
+
+middle_screen = Canvas(scrollframe, yscrollcommand=vscrollbar.set)
+
+vscrollbar.config(command=middle_screen.yview)
+vscrollbar.pack(side=RIGHT, fill=Y)
+
+middle_screen_panel = Frame(middle_screen)
+
+middle_screen.pack(side=TOP, fill=BOTH, expand=True)
+
+middle_screen.create_window(0,0,window=middle_screen_panel, anchor='n', width=1000)
+
+main_window.update()
+middle_screen.update()
+middle_screen_panel.update()
+middle_screen.config(scrollregion=middle_screen.bbox("all"))
+
+
 
 try:
     ser = Serial_Connect(serial_params['com'], serial_params['baud'], serial_params['datasize'], serial_params['parity'])
@@ -107,7 +127,7 @@ def Read_Serial():
         if ser.inWaiting() > 3 and waiting_status == 'emp':
             waiting_time = 0
             card_id = str(ser.readline())[2:-5]
-            print(card_id)
+            #print(card_id)
             if card_id == "POWER by PDAserwis":
                 Update_Label(main_communicate_label, main_communicate, "Wszystko OK. Czekam na skan.", "black")
             else:
@@ -116,11 +136,11 @@ def Read_Serial():
                     emp_name = employee[0][1] + " " + employee[0][2]
                     global emp_id
                     emp_id = employee[0][0]
-                    print(emp_id)
+                    #print(emp_id)
                     Send_Serial("n1")
                     ser.flushInput()
                     ser.flushOutput()
-                    print(ser.inWaiting())
+                    #print(ser.inWaiting())
                     Update_Label(main_communicate_label, main_communicate, "Czekam na przypisanie urzadzenia do: " + emp_name, "black")
                     waiting_status = 'dev'
                     employee = []
@@ -149,7 +169,7 @@ def Read_Serial():
             if emp_name != "":
                 waiting_time = 0
                 dev_id = str(ser.readline())[2:-5]
-                print(dev_id)
+                #print(dev_id)
                 device = Get_SQL_Data("devices", "*", "rfid_id", dev_id)
                 if device != []:
                     dev_status = Get_SQL_Data("assingment", "*", "active", '1')
@@ -165,9 +185,9 @@ def Read_Serial():
                         Update_Label(main_communicate_label, main_communicate, "Przypisano urzadzenie " + dev_type + " do: " + emp_name, "black")
                         actual_time = datetime.now()
                         actual_time = actual_time.strftime("%Y-%m-%d %H:%M:%S")
-                        print(actual_time)
+                        #print(actual_time)
                         prepared_query = "INSERT INTO assingment (device, employee, date_withdraw, active) VALUES ('" + str(dev_id) + "', '" + str(emp_id) + "', '" + actual_time + "', 1)"
-                        print(prepared_query)
+                        #print(prepared_query)
                         Update_SQL_Data_Prepared(prepared_query)
                         Send_Serial("b1")
             else:
@@ -233,7 +253,7 @@ def Create_Table_Devices(sql_result):
         def Add_Device_Btn(name, rfidid, frame, message):
             if name != "" and name != None and rfidid != "" and rfidid != None:
                 sql_query = "INSERT INTO devices (type, rfid_id, active) VALUES ('" + name + "', '" + rfidid + "', 1);"
-                print(sql_query)
+                #print(sql_query)
                 Update_SQL_Data_Prepared(sql_query)
                 frame.destroy()
                 Create_Table_Devices(Get_Devices())
@@ -264,7 +284,7 @@ def Create_Table_Devices(sql_result):
     Clear(middle_screen_panel)
     Clear(top_buttons_panel)
     add_emp_btn = ttk.Button(top_buttons_panel, text="Dodaj\nurzadzenie", command=lambda: Add_Device()).pack(side=TOP, anchor=N, fill=Y)
-    scrollbar = ttk.Scrollbar(middle_screen_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=RIGHT, fill=Y)
+    #scrollbar = ttk.Scrollbar(right_buttons_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=LEFT, fill=Y)
     i = 1
     dict_firma = {}
     dict_firma["frame0"] = Frame(middle_screen_panel, highlightbackground="black", highlightthickness=0.5)
@@ -324,6 +344,8 @@ def Create_Table_Devices(sql_result):
                 rm_btn.pack(side=LEFT)
                 
         i+=1
+    main_window.update()
+    middle_screen.config(scrollregion=middle_screen.bbox("all"))
 def Create_Table_Employees(sql_result):
     conn = SQL_Connect(connection_params['host'], connection_params['password'], connection_params['ip'], connection_params['database'], connection_params['port'])
     def Edit_Employee(employee_id):
@@ -336,7 +358,7 @@ def Create_Table_Employees(sql_result):
         newWindow.title("Edytuj pracownika")
         newWindow.geometry("250x100")
         newWindow.iconbitmap(current_directory + "\img\ils.ico")
-        print(employee_id)
+        #print(employee_id)
         sql_query = "SELECT fname, lname, card_id FROM employees WHERE id =  " + str(employee_id)
         get_sql = conn.cursor()
         get_sql.execute(sql_query)
@@ -351,7 +373,7 @@ def Create_Table_Employees(sql_result):
         employee_lname.set(output[0][1])
         employee_cardid = StringVar()
         employee_cardid.set(output[0][2])
-        print(employee_fname.get())
+        #print(employee_fname.get())
         Label(newWindow, text="Imie:").grid(row=0, column=0, sticky='ew')
         fname = Entry(newWindow, textvariable=s_fname)
         fname.grid(row=0, column=1)
@@ -382,7 +404,7 @@ def Create_Table_Employees(sql_result):
         def Add_Employee_Btn(fname, lname, cardid, frame, message):
             if fname != "" and fname != None and lname != "" and lname != None and cardid != "" and cardid != None:
                 sql_query = "INSERT INTO employees (fname, lname, card_id, active) VALUES ('" + fname + "', '" + lname + "', '" + cardid + "', 1);"
-                print(sql_query)
+                #print(sql_query)
                 Update_SQL_Data_Prepared(sql_query)
                 frame.destroy()
                 Create_Table_Employees(Get_Employees())
@@ -417,7 +439,7 @@ def Create_Table_Employees(sql_result):
     Clear(middle_screen_panel)
     Clear(top_buttons_panel)
     add_emp_btn = ttk.Button(top_buttons_panel, text="Dodaj\npracownika", command=lambda: Add_Employee()).pack(side=TOP, anchor=N, fill=Y)
-    scrollbar = ttk.Scrollbar(middle_screen_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=RIGHT, fill=Y)
+    #scrollbar = ttk.Scrollbar(right_buttons_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=LEFT, fill=Y)
     i = 1
     dict_firma = {}
     dict_firma["frame0"] = Frame(middle_screen_panel, highlightbackground="black", highlightthickness=0.5)
@@ -488,6 +510,8 @@ def Create_Table_Employees(sql_result):
                 e_btn.pack(side=LEFT)
                 rm_btn.pack(side=LEFT)
         i+=1
+    main_window.update()
+    middle_screen.config(scrollregion=middle_screen.bbox("all"))
 def Create_Table_Assingment(sql_result):
     conn = SQL_Connect(connection_params['host'], connection_params['password'], connection_params['ip'], connection_params['database'], connection_params['port'])
     def Generate_Log():
@@ -527,7 +551,7 @@ def Create_Table_Assingment(sql_result):
             get_sql_xlsx = conn.cursor()
             get_sql_xlsx.execute(sql_query)
             output = get_sql_xlsx.fetchall()
-            print(output)
+            #print(output)
 
             xlsx_row = 0
             for device_type, device_rfid_id, emp_fname, emp_lname, assign_id, assign_dw, assign_dd, assign_act in output:
@@ -587,7 +611,7 @@ def Create_Table_Assingment(sql_result):
             devices.append(temp_dev_name)
             devices_dict[temp_dev_name] = temp_dev_id
 
-        print(devices)
+        #print(devices)
 
         Label(newWindow, text="Urzadzenie:").grid(row=0, column=0, sticky='ew')
         choose_dev = OptionMenu(newWindow, choosen_dev, *devices)
@@ -609,7 +633,7 @@ def Create_Table_Assingment(sql_result):
 
     Clear(middle_screen_panel)
     Clear(top_buttons_panel)
-    scrollbar = ttk.Scrollbar(middle_screen_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=RIGHT, fill=Y)
+    #scrollbar = ttk.Scrollbar(right_buttons_panel, orient='vertical', command=middle_screen_panel.yview).pack(side=LEFT, fill=Y)
 
     i = 1
     dict_firma = {}
@@ -715,6 +739,9 @@ def Create_Table_Assingment(sql_result):
                 e.config(state='disabled')
               
         i+=1
+    main_window.update()
+    middle_screen.config(scrollregion=middle_screen.bbox("all"))
+
 #Communicate at bottom informing about state of device
 main_communicate = StringVar()
 main_communicate.set("Wszystko OK, czekam na skan.")
@@ -763,7 +790,7 @@ def DB_Data_Window():
     parities = ["none", "even", "odd", "mark"]
     for i in range(0, 21):
         serials.append("COM" + str(i))
-    print(serials)
+    #print(serials)
 
     ttk.Label(newWindow, text="Baza:", anchor=E, font=("Arial", 15)).grid(column=0, row=0)
     ttk.Label(newWindow, text="-------------", anchor=E, font=("Arial", 15)).grid(column=1, row=0)
