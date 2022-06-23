@@ -23,8 +23,6 @@ def File_Permission_Update():
         os.system('CACLS "' + ser_params_file + '" /e /p ' + usrname + ':f')
     except Exception as e:
         print(e)
-
-
 File_Permission_Update()
 
 def Refresh(self):
@@ -148,18 +146,27 @@ def Read_Serial():
                 else:
                     dev_id = str(ser.readline())[2:-5]
                     device = Get_SQL_Data("devices", "*", "rfid_id", dev_id)
+                    
                     if device != []:
                         dev_type = device[0][1]
                         dev_id = device[0][0]
-                        actual_time = datetime.now()
-                        actual_time = actual_time.strftime("%Y-%m-%d %H:%M:%S")
-                        prepared_query_2 = "UPDATE assingment SET active = 0 , date_deposit = '" + actual_time + "' WHERE device = " + str(dev_id) + " AND active = 1"
-                        print(prepared_query_2)
-                        Update_SQL_Data_Prepared(prepared_query_2)
-                        Update_Label(main_communicate_label, main_communicate, "Odpialem urzadzenie " + dev_type, "black")
-                        Send_Serial("b1")
-                        sleep(1)
-                        Send_Serial("b0")
+                        device_check = Get_SQL_Data("assingment", "*", "device", str(dev_id) + "' AND active = '1")
+                        if device_check == []:
+                            Update_Label(main_communicate_label, main_communicate, "Urzadzenie " + dev_type + " nie jest do nikogo przypisane", "black")
+                            Send_Serial("r1")
+                            sleep(1)
+                            Send_Serial("r0")
+                        else:
+                            print(device_check)
+                            actual_time = datetime.now()
+                            actual_time = actual_time.strftime("%Y-%m-%d %H:%M:%S")
+                            prepared_query_2 = "UPDATE assingment SET active = 0 , date_deposit = '" + actual_time + "' WHERE device = " + str(dev_id) + " AND active = 1"
+                            Update_SQL_Data_Prepared(prepared_query_2)
+                            Update_Label(main_communicate_label, main_communicate, "Odpialem urzadzenie " + dev_type, "black")
+                            Send_Serial("b1")
+                            sleep(1)
+                            Send_Serial("b0")
+                            device = []
                     else:
                         Update_Label(main_communicate_label, main_communicate, "Nie znaleziono karty - " + card_id + ". Zeskanuj karte pracownika", "black")
                         Send_Serial("r1")
@@ -199,9 +206,11 @@ def Read_Serial():
         ser.flushInput()
         ser.flushOutput()
         lbl.after(200, Read_Serial)
+        print(waiting_status)
     except Exception as e:
         print(e)
         Update_Label(main_communicate_label, main_communicate, "Blad przy probie nawiazania polaczenia z czytnikiem RFID - " + str(e), "red")
+
 
 #Middle screen tables
 def Create_Table_Devices(sql_result):

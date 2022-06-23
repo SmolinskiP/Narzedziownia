@@ -64,6 +64,7 @@ def Update_SQL_Data_Prepared(prepared_query):
 def Get_SQL_Data(table, what, where, where2):
     global conn
     sql_query = "SELECT " + what + " FROM " + table + " WHERE " + where + " = '" + where2 + "'"
+    print(sql_query)
     get_sql = conn.cursor()
     get_sql.execute(sql_query)
     output = get_sql.fetchall()
