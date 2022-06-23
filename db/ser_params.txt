@@ -1,0 +1,4 @@
+serial="COM4"
+baudrate="9600"
+datasize="8"
+parity="none"

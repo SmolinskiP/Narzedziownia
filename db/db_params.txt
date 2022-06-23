@@ -1,0 +1,5 @@
+ip="10.0.10.179"
+host="ils"
+database="ils"
+password="PDAilsSERWIS"
+port="3306"
